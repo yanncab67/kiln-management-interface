@@ -11,6 +11,8 @@ export default function PracticianPage() {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [pieces, setPieces] = useState<any[]>([])
+  const [cookedPieces, setCookedPieces] = useState<any[]>([])
+  const [showHistory, setShowHistory] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [showNotificationDialog, setShowNotificationDialog] = useState(false)
   const [pendingPieceData, setPendingPieceData] = useState<any>(null)
@@ -32,6 +34,10 @@ export default function PracticianPage() {
     const allPieces = JSON.parse(localStorage.getItem("pieces") || "[]")
     const userPieces = allPieces.filter((piece: any) => piece.submittedBy?.email === userEmail)
     setPieces(userPieces)
+
+    const allCookedPieces = JSON.parse(localStorage.getItem("cookedPieces") || "[]")
+    const userCookedPieces = allCookedPieces.filter((piece: any) => piece.submittedBy?.email === userEmail)
+    setCookedPieces(userCookedPieces)
   }
 
   const handleSubmit = (data: any) => {
@@ -118,8 +124,8 @@ export default function PracticianPage() {
         )}
 
         {/* Pieces Grid */}
-        <div>
-          <h2 className="text-2xl font-bold text-[#8b6d47] mb-6">Mes pièces</h2>
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-[#8b6d47] mb-6">Mes pièces en attente</h2>
           {pieces.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
               <p className="text-slate-500 text-lg">Vous n'avez pas encore de pièces en cuisson</p>
@@ -129,6 +135,65 @@ export default function PracticianPage() {
             <PiecesGrid pieces={pieces} />
           )}
         </div>
+
+        {cookedPieces.length > 0 && (
+          <div className="mb-8">
+            <Button
+              onClick={() => setShowHistory(!showHistory)}
+              variant="outline"
+              className="mb-4 border-green-600 text-green-600 hover:bg-green-50"
+            >
+              {showHistory ? "Masquer" : "Afficher"} l'historique des pièces cuites ({cookedPieces.length})
+            </Button>
+
+            {showHistory && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-green-700 mb-6">Historique - Pièces cuites</h2>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {cookedPieces.map((piece) => (
+                    <div
+                      key={piece.id}
+                      className="bg-gradient-to-br from-green-50 to-white border-2 border-green-200 rounded-xl overflow-hidden shadow-lg"
+                    >
+                      <div className="relative">
+                        {piece.photo && (
+                          <img
+                            src={piece.photo || "/placeholder.svg"}
+                            alt="Ceramic piece"
+                            className="w-full h-48 object-cover"
+                          />
+                        )}
+                        <div className="absolute top-3 right-3 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                          ✓ Cuite
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-2">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="bg-[#c8623e] text-white px-3 py-1 rounded-full text-sm">
+                            {piece.firingType}
+                          </span>
+                          {piece.temperatureType && (
+                            <span className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                              {piece.temperatureType}
+                            </span>
+                          )}
+                        </div>
+                        {piece.clayType && <p className="text-xs text-slate-600">Type: {piece.clayType}</p>}
+                        <p className="text-xs text-slate-500">
+                          Soumise: {new Date(piece.submittedDate).toLocaleDateString("fr-FR")}
+                        </p>
+                        <p className="text-xs text-green-600 font-semibold">
+                          Cuite le: {new Date(piece.firedDate).toLocaleDateString("fr-FR")}
+                        </p>
+                        {piece.notes && <p className="text-sm text-slate-600 italic">"{piece.notes}"</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <NotificationDialog
           open={showNotificationDialog}
