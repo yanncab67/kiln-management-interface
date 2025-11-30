@@ -18,26 +18,41 @@ export default function PracticianPage() {
   const [pendingPieceData, setPendingPieceData] = useState<any>(null)
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user")
-    if (!userStr) {
-      router.push("/")
+    const userString = localStorage.getItem("user")
+    if (!userString) {
+      window.location.href = "/"
       return
     }
 
-    const user = JSON.parse(userStr)
-    setCurrentUser(user)
+    const userData = JSON.parse(userString)
 
-    loadPieces(user.email)
-  }, [router])
+    if (userData.role === "admin") {
+      window.location.href = "/admin"
+      return
+    }
 
-  const loadPieces = (userEmail: string) => {
-    const allPieces = JSON.parse(localStorage.getItem("pieces") || "[]")
-    const userPieces = allPieces.filter((piece: any) => piece.submittedBy?.email === userEmail)
-    setPieces(userPieces)
+    setCurrentUser(userData)
+    setIsAuthorized(true)
 
-    const allCookedPieces = JSON.parse(localStorage.getItem("cookedPieces") || "[]")
-    const userCookedPieces = allCookedPieces.filter((piece: any) => piece.submittedBy?.email === userEmail)
-    setCookedPieces(userCookedPieces)
+    // 🔴 AVANT : loadPieces() lisait localStorage
+    // loadPieces()
+
+    // 🟢 MAINTENANT : on interroge l’API en lui passant l’email
+    loadPieces(userData.email)
+  }, [])
+
+  async function loadPieces(userEmail: string) {
+    try {
+      const res = await fetch(`/api/pieces?userEmail=${encodeURIComponent(userEmail)}`)
+      if (!res.ok) {
+        console.error("Erreur lors du chargement des pièces")
+        return
+      }
+      const data = await res.json()
+      setPieces(data)
+    } catch (error) {
+      console.error("Erreur réseau lors du chargement des pièces", error)
+    }
   }
 
   const handleSubmit = (data: any) => {
@@ -45,30 +60,48 @@ export default function PracticianPage() {
     setShowNotificationDialog(true)
   }
 
-  const confirmSubmit = () => {
-    if (!pendingPieceData) return
+  async function handleAddPiece(formData: {
+    title: string
+    description?: string
+    imageUrl?: string
+    clayType?: string
+    glazeType?: string
+    firingType: string
+    desiredDate?: string
+    priority: "Normal" | "Urgent"
+  }) {
+    if (!currentUser) return
 
-    const newPiece = {
-      id: Date.now(),
-      ...pendingPieceData,
-      status: "En attente",
+    const payload = {
+      ...formData,
       submittedBy: {
-        email: currentUser?.email,
-        firstName: currentUser?.firstName,
-        lastName: currentUser?.lastName,
+        email: currentUser.email,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
       },
     }
 
-    const allPieces = JSON.parse(localStorage.getItem("pieces") || "[]")
-    const updatedPieces = [...allPieces, newPiece]
-    localStorage.setItem("pieces", JSON.stringify(updatedPieces))
+    try {
+      const res = await fetch("/api/pieces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
 
-    console.log("[v0] Email notification sent to administrator about new piece submission")
+      if (!res.ok) {
+        console.error("Erreur lors de la création de la pièce")
+        return
+      }
 
-    loadPieces(currentUser?.email)
-    setShowForm(false)
-    setShowNotificationDialog(false)
-    setPendingPieceData(null)
+      // On pourrait lire la pièce renvoyée :
+      // const created = await res.json()
+
+      // Mais pour être sûr d’être synchro, on recharge toute la liste :
+      await loadPieces(currentUser.email)
+      setShowForm(false)
+    } catch (error) {
+      console.error("Erreur réseau lors de la création de la pièce", error)
+    }
   }
 
   const cancelSubmit = () => {
@@ -119,7 +152,7 @@ export default function PracticianPage() {
         {showForm && (
           <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8">
             <h2 className="text-2xl font-bold text-[#8b6d47] mb-6">Ajouter une nouvelle pièce</h2>
-            <StudentForm onSubmit={handleSubmit} onCancel={() => setShowForm(false)} />
+            <StudentForm onSubmit={handleAddPiece} onCancel={() => setShowForm(false)} />
           </div>
         )}
 
