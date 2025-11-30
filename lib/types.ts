@@ -1,6 +1,5 @@
 // lib/types.ts
 //test
-//test2
 export type UserRole = "admin" | "user"
 
 export interface User {

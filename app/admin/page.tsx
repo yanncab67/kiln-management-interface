@@ -90,7 +90,7 @@ export default function AdminPage() {
       <div className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-[#8b6d47]">🔥 Gestion des Caca</h1>
+            <h1 className="text-3xl font-bold text-[#8b6d47]">🔥 Gestion des Cuissons</h1>
             {currentUser && (
               <p className="text-sm text-gray-600 mt-1">
                 Connecté en tant que:{" "}
