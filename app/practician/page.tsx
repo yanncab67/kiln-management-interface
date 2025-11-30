@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import StudentForm from "@/components/student-form"
 import PiecesGrid from "@/components/pieces-grid"
+import NotificationDialog from "@/components/notification-dialog"
 
 export default function PracticianPage() {
   const router = useRouter()
   const [showForm, setShowForm] = useState(false)
   const [pieces, setPieces] = useState<any[]>([])
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false)
+  const [pendingPieceData, setPendingPieceData] = useState<any>(null)
 
   useEffect(() => {
     const userStr = localStorage.getItem("user")
@@ -32,9 +35,16 @@ export default function PracticianPage() {
   }
 
   const handleSubmit = (data: any) => {
+    setPendingPieceData(data)
+    setShowNotificationDialog(true)
+  }
+
+  const confirmSubmit = () => {
+    if (!pendingPieceData) return
+
     const newPiece = {
       id: Date.now(),
-      ...data,
+      ...pendingPieceData,
       status: "En attente",
       submittedBy: {
         email: currentUser?.email,
@@ -47,8 +57,17 @@ export default function PracticianPage() {
     const updatedPieces = [...allPieces, newPiece]
     localStorage.setItem("pieces", JSON.stringify(updatedPieces))
 
+    console.log("[v0] Email notification sent to administrator about new piece submission")
+
     loadPieces(currentUser?.email)
     setShowForm(false)
+    setShowNotificationDialog(false)
+    setPendingPieceData(null)
+  }
+
+  const cancelSubmit = () => {
+    setShowNotificationDialog(false)
+    setPendingPieceData(null)
   }
 
   const handleLogout = () => {
@@ -110,6 +129,15 @@ export default function PracticianPage() {
             <PiecesGrid pieces={pieces} />
           )}
         </div>
+
+        <NotificationDialog
+          open={showNotificationDialog}
+          onOpenChange={setShowNotificationDialog}
+          title="Notification à l'administrateur"
+          description="Voulez-vous envoyer une notification par email à l'administrateur pour l'informer de l'ajout de cette pièce ?"
+          onConfirm={confirmSubmit}
+          onCancel={cancelSubmit}
+        />
       </div>
     </div>
   )

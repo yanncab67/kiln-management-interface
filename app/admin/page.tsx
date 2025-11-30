@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import AdminPieceCard from "@/components/admin-piece-card"
 import AdminFilters from "@/components/admin-filters"
 import AdminStats from "@/components/admin-stats"
+import NotificationDialog from "@/components/notification-dialog"
 
 const handleLogout = () => {
   // Logout logic here
@@ -20,6 +21,8 @@ export default function AdminPage() {
   const [sortBy, setSortBy] = useState("date")
   const [showCookedHistory, setShowCookedHistory] = useState(false)
   const [markingId, setMarkingId] = useState<number | null>(null)
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false)
+  const [pendingPieceId, setPendingPieceId] = useState<number | null>(null)
 
   useEffect(() => {
     const user = localStorage.getItem("currentUser")
@@ -35,25 +38,45 @@ export default function AdminPage() {
   }
 
   const handleMarkAsFired = (id: number) => {
-    setMarkingId(id)
+    setPendingPieceId(id)
+    setShowNotificationDialog(true)
+  }
+
+  const confirmMarkAsFired = () => {
+    if (pendingPieceId === null) return
+
+    setMarkingId(pendingPieceId)
     setTimeout(() => {
-      const piece = pieces.find((p) => p.id === id)
+      const piece = pieces.find((p) => p.id === pendingPieceId)
       if (piece) {
         const cookedWith = {
           ...piece,
           status: "Prêt",
           firedDate: new Date().toISOString(),
         }
-        const updatedPieces = pieces.filter((p) => p.id !== id)
+        const updatedPieces = pieces.filter((p) => p.id !== pendingPieceId)
         const updatedCooked = [...cookedPieces, cookedWith]
 
         setPieces(updatedPieces)
         setCookedPieces(updatedCooked)
         localStorage.setItem("pieces", JSON.stringify(updatedPieces))
         localStorage.setItem("cookedPieces", JSON.stringify(updatedCooked))
+
+        if (piece.submittedBy) {
+          console.log(
+            `[v0] Email notification sent to ${piece.submittedBy.email} (${piece.submittedBy.firstName} ${piece.submittedBy.lastName}) - Piece is ready`,
+          )
+        }
       }
       setMarkingId(null)
+      setShowNotificationDialog(false)
+      setPendingPieceId(null)
     }, 500)
+  }
+
+  const cancelMarkAsFired = () => {
+    setShowNotificationDialog(false)
+    setPendingPieceId(null)
   }
 
   const logout = () => {
@@ -186,6 +209,15 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+
+      <NotificationDialog
+        open={showNotificationDialog}
+        onOpenChange={setShowNotificationDialog}
+        title="Notification à l'artisan"
+        description="Voulez-vous envoyer une notification par email à l'artisan pour l'informer que sa pièce est prête ?"
+        onConfirm={confirmMarkAsFired}
+        onCancel={cancelMarkAsFired}
+      />
     </div>
   )
 }
