@@ -15,6 +15,7 @@ export default function PracticianPage() {
   const [showHistory, setShowHistory] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [showNotificationDialog, setShowNotificationDialog] = useState(false)
+  const [isAuthorized, setIsAuthorized] = useState(false)
   const [pendingPieceData, setPendingPieceData] = useState<any>(null)
 
   useEffect(() => {
