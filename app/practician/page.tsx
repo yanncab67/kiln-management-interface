@@ -109,7 +109,14 @@ export default function PracticianPage() {
     setShowNotificationDialog(false)
     setPendingPieceData(null)
   }
+  const confirmSubmit = async () => {
+    if (!pendingPieceData) return
 
+    await handleAddPiece(pendingPieceData)
+
+    setShowNotificationDialog(false)
+    setPendingPieceData(null)
+  }
   const handleLogout = () => {
     localStorage.removeItem("user")
     router.push("/")
